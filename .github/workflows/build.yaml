@@ -8,6 +8,7 @@ on:
       - "templates/**"
       - ".github/actions/install-aidoku-cli/**"
       - ".github/workflows/build.yaml"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}
