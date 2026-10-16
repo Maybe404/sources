@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - "sources/**"
+      - "sources/zh.baozimanhua/**"
       - "templates/**"
       - ".github/actions/install-aidoku-cli/**"
       - ".github/workflows/build.yaml"
@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          for source in sources/*; do
+          for source in sources/zh.baozimanhua; do
             [[ -f "$source/Cargo.toml" ]] || continue
 
             echo "::group::Packaging $source"
@@ -58,7 +58,7 @@ jobs:
 
       - name: Build source list
         run: |
-          aidoku build sources/*/package.aix --name "Aidoku Community Sources"
+          aidoku build sources/zh.baozimanhua/package.aix --name "Maybe404 Sources"
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.7.2
