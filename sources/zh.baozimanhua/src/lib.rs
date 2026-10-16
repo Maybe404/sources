@@ -15,7 +15,10 @@ use html::{ChapterPage as _, MangaPage as _, PageList as _};
 use json::ApiResponse;
 use net::Url;
 
-pub const BASE_URL: &str = "https://www.baozimh.com";
+pub const BASE_URL: &str = "https://www.twmanga.com";
+
+/// Safety cap on chapter sub-pages fetched for a single chapter
+const MAX_SUB_PAGES: i32 = 50;
 
 struct Baozimanhua;
 
@@ -65,10 +68,29 @@ impl Source for Baozimanhua {
 	}
 
 	fn get_page_list(&self, manga: Manga, chapter: Chapter) -> Result<Vec<Page>> {
-		Url::chapter(manga.key, chapter.key)
-			.request()?
-			.html()?
-			.pages()
+		let mut pages: Vec<Page> = Vec::new();
+		let mut seen: Vec<String> = Vec::new();
+		let mut page = 1;
+		loop {
+			let html = Url::chapter(manga.key.clone(), chapter.key.clone(), page)
+				.request()?
+				.html()?;
+			// adjacent sub-pages overlap, so keep the first occurrence of each image
+			for item in html.pages()? {
+				if let aidoku::PageContent::Url(url, _) = &item.content {
+					if seen.contains(url) {
+						continue;
+					}
+					seen.push(url.clone());
+				}
+				pages.push(item);
+			}
+			page += 1;
+			if page > MAX_SUB_PAGES || !html.has_sub_page(&manga.key, &chapter.key, page) {
+				break;
+			}
+		}
+		Ok(pages)
 	}
 }
 
@@ -85,8 +107,14 @@ impl ImageRequestProvider for Baozimanhua {
 
 impl DeepLinkHandler for Baozimanhua {
 	fn handle_deep_link(&self, url: String) -> Result<Option<DeepLinkResult>> {
-		let url = url.trim_start_matches(BASE_URL);
-		let mut splits = url.split('/').skip(1);
+		// accept links from any mirror domain by dropping the scheme and host
+		let path = url
+			.split_once("://")
+			.map_or(url.as_str(), |(_, rest)| rest)
+			.split_once('/')
+			.map_or("", |(_, path)| path);
+		let path = path.split(['?', '#']).next().unwrap_or_default();
+		let mut splits = path.split('/');
 		let deep_link_result = match splits.next() {
 			Some("comic") => {
 				match (splits.next(), splits.next()) {
@@ -95,19 +123,14 @@ impl DeepLinkHandler for Baozimanhua {
 						key: manga_id.into(),
 					}),
 					// /comic/chapter/{manga_id}
-					(Some("chapter"), Some(path)) => {
-						let parts: Vec<&str> = path.split('_').collect();
-						if parts.len() >= 2 {
-							let manga_id = parts[0];
-							let chapter_id = parts[1].trim_end_matches(".html");
-							Some(DeepLinkResult::Chapter {
-								manga_key: manga_id.into(),
-								key: chapter_id.into(),
-							})
-						} else {
-							None
-						}
-					}
+					// /comic/chapter/{manga_id}/{section}_{chapter_id}[_{page}].html
+					(Some("chapter"), Some(manga_id)) => splits
+						.next()
+						.and_then(|file| file.trim_end_matches(".html").split('_').nth(1))
+						.map(|chapter_id| DeepLinkResult::Chapter {
+							manga_key: manga_id.into(),
+							key: chapter_id.into(),
+						}),
 					_ => None,
 				}
 			}

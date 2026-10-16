@@ -286,11 +286,12 @@ impl ChapterPage for Document {
 
 pub trait PageList {
 	fn pages(&self) -> Result<Vec<Page>>;
+	fn has_sub_page(&self, manga_id: &str, chapter_id: &str, page: i32) -> bool;
 }
 
 impl PageList for Document {
 	fn pages(&self) -> Result<Vec<Page>> {
-		let items = self.try_select("img.comic-contain__item")?;
+		let items = self.try_select(".comic-contain__item")?;
 
 		let pages = items
 			.filter_map(|item| {
@@ -307,6 +308,12 @@ impl PageList for Document {
 			.collect();
 
 		Ok(pages)
+	}
+
+	fn has_sub_page(&self, manga_id: &str, chapter_id: &str, page: i32) -> bool {
+		let href = format!("/comic/chapter/{}/0_{}_{}.html", manga_id, chapter_id, page);
+		self.select(format!("a[href$=\"{}\"]", href))
+			.is_some_and(|list| list.first().is_some())
 	}
 }
 

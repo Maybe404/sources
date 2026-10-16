@@ -7,8 +7,6 @@ use aidoku::{
 };
 use core::fmt::{Display, Formatter, Result as FmtResult};
 
-pub const APP_BASE_URL: &str = "https://appcn.baozimh.com";
-
 const GENRE_OPTIONS: &[&str] = &[
 	"戀愛",
 	"純愛",
@@ -83,20 +81,18 @@ pub enum Url {
 	Chapter {
 		manga_id: String,
 		chapter_id: String,
+		/// 1-based sub-page index; chapters on the web are split across several pages
+		page: i32,
 	},
 }
 
 impl Url {
 	pub fn request(&self) -> Result<Request> {
 		let url = self.to_string();
-		let referer = match self {
-			Url::Chapter { .. } => APP_BASE_URL,
-			_ => BASE_URL,
-		};
 		Ok(Request::get(url)?
 			.header("Origin", BASE_URL)
 			.header("Accept-Language", "zh-CN,zh;q=0.9")
-			.header("Referer", referer))
+			.header("Referer", BASE_URL))
 	}
 
 	pub fn from_query_or_filters(
@@ -155,10 +151,11 @@ impl Url {
 		Self::Manga { id }
 	}
 
-	pub fn chapter(manga_id: String, chapter_id: String) -> Self {
+	pub fn chapter(manga_id: String, chapter_id: String, page: i32) -> Self {
 		Self::Chapter {
 			manga_id,
 			chapter_id,
+			page,
 		}
 	}
 }
@@ -188,12 +185,17 @@ impl Display for Url {
 			Url::Chapter {
 				manga_id,
 				chapter_id,
+				page,
 			} => {
 				write!(
 					f,
-					"{}/baozimhapp/comic/chapter/{}/0_{}.html",
-					APP_BASE_URL, manga_id, chapter_id
-				)
+					"{}/comic/chapter/{}/0_{}",
+					BASE_URL, manga_id, chapter_id
+				)?;
+				if *page > 1 {
+					write!(f, "_{}", page)?;
+				}
+				write!(f, ".html")
 			}
 		}
 	}
