@@ -4,6 +4,7 @@
 		"name": "包子漫畫",
 		"version": 6,
 		"urls": [
+			"https://www.twmanga.com",
 			"https://www.baozimh.com",
 			"https://tw.baozimh.com",
 			"https://www.webmota.com",
@@ -14,7 +15,6 @@
 			"https://tw.dinnerku.com",
 			"https://www.dociy.net",
 			"https://tw.dociy.net",
-			"https://www.twmanga.com",
 			"https://tw.twmanga.com"
 		],
 		"contentRating": 1,
