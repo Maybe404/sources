@@ -1,0 +1,18 @@
+{
+  "name": "Maybe404 Sources",
+  "sources": [
+    {
+      "id": "zh.baozimanhua",
+      "name": "包子漫畫",
+      "version": 6,
+      "iconURL": "icons/zh.baozimanhua-v6.png",
+      "downloadURL": "sources/zh.baozimanhua-v6.aix",
+      "languages": [
+        "zh"
+      ],
+      "contentRating": 1,
+      "baseURL": "https://www.twmanga.com",
+      "minAppVersion": "0.7.1"
+    }
+  ]
+}
